@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Collection</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700&family=Numans&display=swap" rel="stylesheet">
+
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:#fff; color:#111;
+      padding:40px;
+      font-family:'Numans',sans-serif; 
+    }
+    a{ text-decoration:none; color:#666; font-size:16px; }
+    h1{ margin:10px 0 24px; font-weight:400; font-size:24px; color:#5f6368; text-transform:lowercase; }
+    #toolbar{ display:flex; gap:12px; align-items:center; margin-bottom:8px; }
+    #btn-clear{
+      padding:8px 14px; border-radius:10px; border:1px solid #e0e0e0; background:#fafafa; cursor:pointer;
+      font-family:'Numans',sans-serif; font-weight:400;
+    }
+    #btn-clear:hover{ background:#f3f3f3 }
+
+    #grid{ display:flex; flex-wrap:wrap; justify-content:flex-start; }
+
+    .card, .label{ font-family:'Montserrat Alternates',sans-serif; font-weight:700; }
+
+    .card{
+      width:200px; height:300px;
+      border-radius:8px; box-shadow:none;
+      margin:40px;                              
+      position:relative; display:block;
+      padding:24px; overflow:hidden; isolation:isolate;
+    }
+    .card::before,.card::after{ display:none; }
+
+    .label{
+      position:absolute; top:24px; right:24px;
+      width:calc(100% - 48px);
+      text-align:right; font-size:20px; line-height:1.2; letter-spacing:.2px; z-index:1;
+    }
+    .icon{
+      position:absolute; right:16px; bottom:16px;
+      object-fit:contain; opacity:.95; z-index:0;
+    }
+
+    #empty-hint{ color:#777; margin-top:8px; font-size:14px; }
+  </style>
+</head>
+<body>
+  <a href="index.html">< home</a>
+  <h1>collection</h1>
+
+  <div id="toolbar">
+    <button id="btn-clear">clear all</button>
+    <span id="empty-hint"></span>
+  </div>
+
+  <div id="grid" aria-live="polite"></div>
+
+  <script>
+    const STYLE = {
+      "sit by a window and look at the sky for 5 minutes": { bg:"#FFDE89", ink:"#DB773B", icon:"cloud",  w:72, h:72 },
+      "write down three things you are grateful for":      { bg:"#6777B5", ink:"#B7CCE9", icon:"pencil", w:88, h:88 },
+      "drink a cup of warm tea":                           { bg:"#F8CABA", ink:"#787BAE", icon:"cup",    w:76, h:76 },
+      "send a quick message to a friend":                  { bg:"#D27089", ink:"#FFE2BE", icon:"message",w:80, h:80 },
+      "take a 10 minute walk while listening to your favorite song": { bg:"#CAD183", ink:"#703D3C", icon:"music",  w:78, h:78 },
+      "take 10 deep breaths":                              { bg:"#6EADC2", ink:"#FFE5E0", icon:"wind",   w:92, h:92 },
+      "eat your favorite fruit":                           { bg:"#8B9F35", ink:"#FEFA94", icon:"apple",  w:72, h:72 },
+      "take a photo during a short walk":                  { bg:"#2B2B23", ink:"#D1B7D2", icon:"camera", w:84, h:84 },
+      "record your mood today with one emoji":             { bg:"#FF772D", ink:"#E2EB92", icon:"emoji",  w:84, h:84 },
+      "enjoy a warm bath":                                 { bg:"#E1D0DB", ink:"#396451", icon:"bath",   w:90, h:90 }
+    };
+
+    const LS_KEY='hol_archive_v1';
+    const MAX_SLOTS=20;
+
+    function loadArchive(){ try{ const raw=localStorage.getItem(LS_KEY); return raw?JSON.parse(raw):[]; }catch(_){ return []; } }
+    function saveArchive(items){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
+
+    function makeCard(text){
+      const s = STYLE[text] || {bg:"#eee",ink:"#222",icon:"emoji",w:84,h:84};
+
+      const card=document.createElement('div');
+      card.className='card';
+      card.style.background=s.bg;
+      card.style.color=s.ink;
+
+      const label=document.createElement('div');
+      label.className='label';
+      label.textContent=text;
+      card.appendChild(label);
+
+      const icon=document.createElement('img');
+      icon.className='icon';
+      icon.src='icons/'+s.icon+'.png';
+      icon.alt=s.icon;
+      icon.style.width=s.w+'px';
+      icon.style.height=s.h+'px';
+      card.appendChild(icon);
+
+      return card;
+    }
+
+    function render(){
+      const grid=document.getElementById('grid');
+      const items=loadArchive();
+      const nodes=[];
+      for(let i=0;i<Math.min(items.length,MAX_SLOTS);i++){
+        nodes.push(makeCard(items[i].text));
+      }
+      grid.replaceChildren(...nodes);
+      document.getElementById('empty-hint').textContent =
+        items.length===0 ? 'No saved tips yet — come back after clicking on the home page.' : '';
+    }
+
+    document.getElementById('btn-clear').addEventListener('click',()=>{
+      if(confirm('Clear all saved tips?')){ saveArchive([]); render(); }
+    });
+
+    render();
+  </script>
+</body>
+</html>
