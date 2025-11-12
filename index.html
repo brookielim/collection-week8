@@ -3,92 +3,64 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Happiness Over the Luck</title>
+  <title>Collection</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700&family=Numans&display=swap" rel="stylesheet">
 
   <style>
     *{box-sizing:border-box}
-    :root{ --bg:#fff; --ink:#222; }
     body{
-      margin:0; background:var(--bg); color:var(--ink);
-      display:flex; flex-direction:column; align-items:center; text-align:center;
-
-      justify-content:center; 
-      min-height:100svh;           
-
-      padding:40px 0 80px;
+      margin:0; background:#fff; color:#111;
+      padding:40px;
+      font-family:'Numans',sans-serif; 
     }
+    a{ text-decoration:none; color:#666; font-size:16px; }
+    h1{ margin:10px 0 24px; font-weight:400; font-size:24px; color:#5f6368; text-transform:lowercase; }
+    #toolbar{ display:flex; gap:12px; align-items:center; margin-bottom:8px; }
+    #btn-clear{
+      padding:8px 14px; border-radius:10px; border:1px solid #e0e0e0; background:#fafafa; cursor:pointer;
+      font-family:'Numans',sans-serif; font-weight:400;
+    }
+    #btn-clear:hover{ background:#f3f3f3 }
 
-    h1, #btn-click, #nav-collection{ font-family:'Numans',sans-serif; font-weight:400; }
+    #grid{ display:flex; flex-wrap:wrap; justify-content:flex-start; }
 
     .card, .label{ font-family:'Montserrat Alternates',sans-serif; font-weight:700; }
-
-    h1{
-      font-size:clamp(40px,8vw,96px);
-      margin:0 0 20px; line-height:1.05; letter-spacing:.2px;
-    }
-    #actions{ display:flex; gap:12px; align-items:center; margin-bottom:10px; }
-    #btn-click{
-      padding:12px 32px; border:none; border-radius:10px; background:#e6e6e6;
-      font-size:16px; cursor:pointer; transition:filter .2s;
-    }
-    #btn-click:hover{ filter:brightness(.95); }
-    #nav-collection{
-      color:#666; font-size:16px; text-decoration:none;
-      padding:10px 14px; border-radius:10px; border:1px solid #e7e7e7; background:#fafafa;
-    }
-
-    #card-container{ display:flex; justify-content:center; flex-wrap:wrap; width:100%; }
 
     .card{
       width:200px; height:300px;
       border-radius:8px; box-shadow:none;
-      margin:40px;                 
+      margin:40px;                              
       position:relative; display:block;
       padding:24px; overflow:hidden; isolation:isolate;
-      opacity:0; transform:translateY(10px); animation:fadeIn .28s ease forwards;
     }
-    @keyframes fadeIn{to{opacity:1; transform:none;}}
-
+    .card::before,.card::after{ display:none; }
 
     .label{
       position:absolute; top:24px; right:24px;
       width:calc(100% - 48px);
-      text-align:right;
-      font-size:20px; line-height:1.2; letter-spacing:.2px; z-index:1;
+      text-align:right; font-size:20px; line-height:1.2; letter-spacing:.2px; z-index:1;
     }
-
     .icon{
       position:absolute; right:16px; bottom:16px;
       object-fit:contain; opacity:.95; z-index:0;
     }
+
+    #empty-hint{ color:#777; margin-top:8px; font-size:14px; }
   </style>
 </head>
 <body>
-  <h1>HAPPINESS<br>OVER THE LUCK</h1>
+  <a href="index.html">< home</a>
+  <h1>collection</h1>
 
-  <div id="actions">
-    <button id="btn-click" type="button">click</button>
-    <a href="collection.html" id="nav-collection">collection ></a>
+  <div id="toolbar">
+    <button id="btn-clear">clear all</button>
+    <span id="empty-hint"></span>
   </div>
 
-  <section id="card-container" aria-live="polite"></section>
+  <div id="grid" aria-live="polite"></div>
 
   <script>
-    const TIPS = [
-      "sit by a window and look at the sky for 5 minutes",
-      "write down three things you are grateful for",
-      "drink a cup of warm tea",
-      "send a quick message to a friend",
-      "take a 10 minute walk while listening to your favorite song",
-      "take 10 deep breaths",
-      "eat your favorite fruit",
-      "take a photo during a short walk",
-      "record your mood today with one emoji",
-      "enjoy a warm bath"
-    ];
-
     const STYLE = {
       "sit by a window and look at the sky for 5 minutes": { bg:"#FFDE89", ink:"#DB773B", icon:"cloud",  w:72, h:72 },
       "write down three things you are grateful for":      { bg:"#6777B5", ink:"#B7CCE9", icon:"pencil", w:88, h:88 },
@@ -103,46 +75,52 @@
     };
 
     const LS_KEY='hol_archive_v1';
+    const MAX_SLOTS=20;
 
-    function addToArchive(text){
-      let items=[]; try{ const raw=localStorage.getItem(LS_KEY); items=raw?JSON.parse(raw):[]; }catch(_){}
-      items.unshift({ text, ts:new Date().toISOString() });
-      if(items.length>200) items=items.slice(0,200);
-      localStorage.setItem(LS_KEY, JSON.stringify(items));
-    }
-    function pickRandom(){ return TIPS[Math.floor(Math.random()*TIPS.length)]; }
+    function loadArchive(){ try{ const raw=localStorage.getItem(LS_KEY); return raw?JSON.parse(raw):[]; }catch(_){ return []; } }
+    function saveArchive(items){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
 
     function makeCard(text){
       const s = STYLE[text] || {bg:"#eee",ink:"#222",icon:"emoji",w:84,h:84};
 
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.style.background = s.bg;
-      card.style.color = s.ink;
+      const card=document.createElement('div');
+      card.className='card';
+      card.style.background=s.bg;
+      card.style.color=s.ink;
 
-      const label = document.createElement('div');
-      label.className = 'label';
-      label.textContent = text;
+      const label=document.createElement('div');
+      label.className='label';
+      label.textContent=text;
       card.appendChild(label);
 
-      const icon = document.createElement('img');
-      icon.className = 'icon';
-      icon.src = 'icons/'+s.icon+'.png';
+      const icon=document.createElement('img');
+      icon.className='icon';
+      icon.src = s.icon + '.png'; 
       icon.alt = s.icon;
-      icon.style.width  = s.w + 'px';
-      icon.style.height = s.h + 'px';
+      icon.style.width=s.w+'px';
+      icon.style.height=s.h+'px';
       card.appendChild(icon);
 
       return card;
     }
 
-    const container=document.getElementById('card-container');
-    document.getElementById('btn-click').addEventListener('click', ()=>{
-      container.innerHTML='';
-      const text=pickRandom();
-      addToArchive(text);
-      container.appendChild(makeCard(text));
+    function render(){
+      const grid=document.getElementById('grid');
+      const items=loadArchive();
+      const nodes=[];
+      for(let i=0;i<Math.min(items.length,MAX_SLOTS);i++){
+        nodes.push(makeCard(items[i].text));
+      }
+      grid.replaceChildren(...nodes);
+      document.getElementById('empty-hint').textContent =
+        items.length===0 ? 'No saved tips yet — come back after clicking on the home page.' : '';
+    }
+
+    document.getElementById('btn-clear').addEventListener('click',()=>{
+      if(confirm('Clear all saved tips?')){ saveArchive([]); render(); }
     });
+
+    render();
   </script>
 </body>
 </html>
